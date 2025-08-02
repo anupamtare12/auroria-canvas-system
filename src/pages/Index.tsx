@@ -1,39 +1,21 @@
 import { useState, useEffect } from 'react';
-import Preloader from '@/components/Preloader';
 import Navigation from '@/components/Navigation';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
 import CustomCursor from '@/components/CustomCursor';
+import Preloader from '@/components/Preloader';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  const handleLoadingComplete = () => {
-    setIsLoading(false);
-  };
-
-  const handleThemeToggle = () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
+    // Auto-hide preloader after animation completes
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2500);
     
-    if (newTheme) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground dark-transition overflow-x-hidden">
@@ -41,12 +23,12 @@ const Index = () => {
       <CustomCursor />
 
       {/* Preloader */}
-      {isLoading && <Preloader onComplete={handleLoadingComplete} />}
+      {isLoading && <Preloader />}
 
       {/* Main Content */}
       {!isLoading && (
         <>
-          <Navigation isDark={isDark} onThemeToggle={handleThemeToggle} />
+          <Navigation />
           <main>
             <Hero />
             <About />

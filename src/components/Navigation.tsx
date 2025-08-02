@@ -1,161 +1,133 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sun, Moon } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
-interface NavigationProps {
-  isDark: boolean;
-  onThemeToggle: () => void;
-}
-
-const Navigation = ({ isDark, onThemeToggle }: NavigationProps) => {
+const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+
+  const navItems = [
+    { name: "Home", path: "/" },
+    { name: "About", path: "/about" },
+    { name: "Projects", path: "/projects" },
+    { name: "Services", path: "/services" },
+    { name: "Journal", path: "/journal" },
+    { name: "Contact", path: "/contact" },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setScrolled(window.scrollY > 100);
     };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const menuItems = [
-    { name: 'Projects', href: '#projects' },
-    { name: 'About', href: '#about' },
-    { name: 'Services', href: '#services' },
-    { name: 'Journal', href: '#journal' },
-    { name: 'Contact', href: '#contact' },
-  ];
+  const isHomePage = location.pathname === '/';
+  const textColor = isHomePage && !scrolled ? 'text-white' : 'text-foreground';
+  const textColorHover = isHomePage && !scrolled ? 'text-white/90 hover:text-white' : 'text-muted-foreground hover:text-foreground';
 
   return (
-    <>
-      {/* Main Navigation */}
-      <motion.nav
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
-          isScrolled 
-            ? 'bg-background/80 backdrop-blur-md border-b border-border/50' 
-            : 'bg-transparent'
-        }`}
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 3 }}
-      >
-        <div className="container-luxury flex items-center justify-between h-20">
-          {/* Logo */}
-          <motion.a
-            href="#"
-            className="text-2xl font-neue font-light tracking-wider relative group"
-            whileHover={{ scale: 1.05 }}
+    <motion.nav
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-500 backdrop-blur-xl",
+        isHomePage && !scrolled
+          ? "bg-white/5 py-6"
+          : "bg-background/90 border-b border-border/10 py-3 shadow-md"
+      )}
+    >
+      <div className="max-w-7xl mx-auto px-8">
+        <div className="flex items-center justify-between">
+          {/* Logo - with scale on scroll */}
+          <motion.div
+            animate={{ scale: scrolled ? 0.9 : 1 }}
             transition={{ duration: 0.3 }}
           >
-            ANAUR
-            <div className="absolute inset-0 text-accent opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-sm">
-              ANAUR
-            </div>
-          </motion.a>
+            <Link
+              to="/"
+              className={cn(
+                "text-2xl font-bold font-neue transition-all duration-500 hover:tracking-wider hover:text-accent",
+                textColor
+              )}
+            >
+              Anaur design
+            </Link>
+          </motion.div>
 
-          {/* Desktop Menu */}
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-12">
-            {menuItems.map((item, index) => (
-              <motion.a
-                key={item.name}
-                href={item.href}
-                className="text-sm font-light tracking-wide hover:text-accent transition-colors duration-300 relative group"
+            {navItems.map((item, i) => (
+              <motion.div
+                key={item.path}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ 
-                  duration: 0.5, 
-                  delay: 3.2 + index * 0.1,
-                  ease: [0.16, 1, 0.3, 1]
-                }}
+                transition={{ delay: 0.2 + i * 0.05, duration: 0.4 }}
+                className="relative group"
               >
-                {item.name}
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-accent group-hover:w-full transition-all duration-300" />
-              </motion.a>
+                <Link
+                  to={item.path}
+                  className={cn(
+                    "text-lg font-bold relative transition-all duration-300 tracking-wide after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-current hover:after:w-full after:transition-all after:duration-300",
+                    location.pathname === item.path ? textColor : textColorHover
+                  )}
+                >
+                  {item.name}
+                </Link>
+                {location.pathname === item.path && (
+                  <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-accent"></span>
+                )}
+              </motion.div>
             ))}
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center space-x-6">
-            {/* Theme Toggle */}
-            <motion.button
-              onClick={onThemeToggle}
-              className="p-2 rounded-full hover:bg-muted transition-colors duration-300"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 3.5 }}
-            >
-              {isDark ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
-            </motion.button>
-
-            {/* Mobile Menu Toggle */}
-            <motion.button
-              onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 rounded-full hover:bg-muted transition-colors duration-300"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 3.5 }}
-            >
-              {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </motion.button>
-          </div>
-        </div>
-      </motion.nav>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            className="fixed inset-0 z-30 md:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className={cn("md:hidden p-2 transition-all duration-500", textColor)}
+            aria-label="Toggle menu"
           >
-            {/* Backdrop */}
-            <motion.div
-              className="absolute inset-0 bg-background/95 backdrop-blur-lg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            />
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
 
-            {/* Menu Content */}
-            <div className="relative flex flex-col items-center justify-center h-full">
-              <div className="space-y-8">
-                {menuItems.map((item, index) => (
-                  <motion.a
-                    key={item.name}
-                    href={item.href}
-                    className="block text-3xl font-light tracking-wide hover:text-accent transition-colors duration-300"
+        {/* Mobile Navigation */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="md:hidden mt-4 pb-4 overflow-hidden"
+            >
+              <div className="flex flex-col space-y-6 pt-4">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
                     onClick={() => setIsOpen(false)}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -30 }}
-                    transition={{ 
-                      duration: 0.5, 
-                      delay: index * 0.1,
-                      ease: [0.16, 1, 0.3, 1]
-                    }}
+                    className={cn(
+                      "text-lg font-bold transition-all duration-500",
+                      location.pathname === item.path
+                        ? textColor
+                        : textColorHover
+                    )}
                   >
                     {item.name}
-                  </motion.a>
+                  </Link>
                 ))}
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.nav>
   );
 };
 
