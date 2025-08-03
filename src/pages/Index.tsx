@@ -4,6 +4,7 @@ import AdvancedPreloader from './components/Preloader';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import About from './components/About';
+import CustomCursor from './components/CustomCursor';
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -16,6 +17,9 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
+      {/* Custom Cursor - Add this at the very top */}
+      <CustomCursor />
+      
       {/* Preloader */}
       <AnimatePresence mode="wait">
         {isLoading && (
