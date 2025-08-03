@@ -6,7 +6,7 @@ import Navigation from '@/components/Navigation';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
 import CustomCursor from '@/components/CustomCursor';
-import AdvancedPreloader from '@/components/AdvancedPreloader';
+import AdvancedPreloader from '@/components/Preloader.tsx';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
