@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -6,15 +6,18 @@ import Navigation from '@/components/Navigation';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
 import CustomCursor from '@/components/CustomCursor';
-import AdvancedPreloader from '@/components/Preloader.tsx';
+import AdvancedPreloader from '@/components/Preloader';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isPreloaderComplete, setIsPreloaderComplete] = useState(false);
   const [currentSection, setCurrentSection] = useState('home');
+  const [isContentReady, setIsContentReady] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+  const pageContentRef = useRef<HTMLDivElement>(null);
 
   // Section data for dynamic rendering and navigation
   const sections = [
@@ -208,7 +211,7 @@ const Index = () => {
                   <textarea
                     placeholder="Tell us about your project..."
                     rows={6}
-                    className="w-full px-4 py-3 bg-background/50 border border-border/20 rounded-lg focus:border-accent focus:outline-none transition-all duration-300 resize-none"
+                    className="w-full px-4 py-3 bg-background/50 border border-border/border/20 rounded-lg focus:border-accent focus:outline-none transition-all duration-300 resize-none"
                   />
                   <motion.button
                     type="submit"
@@ -262,75 +265,138 @@ const Index = () => {
     }
   ];
 
-  // Handle preloader completion with smooth reveal
-  const handlePreloaderComplete = () => {
-    setIsLoading(false);
+  // Enhanced preloader completion handler with coordinated timing
+  const handlePreloaderComplete = useCallback(() => {
+    setIsPreloaderComplete(true);
     
-    // Animate page elements after preloader
+    // Small delay to ensure preloader exit animation completes
     setTimeout(() => {
-      gsap.fromTo(".page-content", 
-        { opacity: 0, y: 30 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          duration: 1,
-          ease: "power2.out"
-        }
-      );
-    }, 100);
-  };
-
-  // Setup scroll-triggered section detection
-  useEffect(() => {
-    if (!isLoading && mainRef.current) {
-      const sectionElements = sections.map(section => 
-        document.getElementById(section.id)
-      ).filter(Boolean);
-
-      sectionElements.forEach((element, index) => {
-        if (element) {
-          ScrollTrigger.create({
-            trigger: element,
-            start: "top 60%",
-            end: "bottom 40%",
-            onEnter: () => setCurrentSection(sections[index].id),
-            onEnterBack: () => setCurrentSection(sections[index].id),
+      setIsLoading(false);
+      
+      // Start content reveal animation after preloader fully exits
+      setTimeout(() => {
+        setIsContentReady(true);
+        
+        // Enhanced page content reveal animation
+        if (pageContentRef.current) {
+          gsap.set(pageContentRef.current, { 
+            opacity: 0, 
+            y: 20,
+            scale: 0.98
+          });
+          
+          gsap.to(pageContentRef.current, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 1.2,
+            ease: "power3.out",
+            onComplete: () => {
+              // Trigger hero animations after page content is revealed
+              const heroElement = document.getElementById('home');
+              if (heroElement) {
+                gsap.set(heroElement, { willChange: 'transform' });
+                gsap.fromTo(heroElement, 
+                  { 
+                    opacity: 0.8,
+                    filter: 'blur(4px)'
+                  },
+                  { 
+                    opacity: 1,
+                    filter: 'blur(0px)',
+                    duration: 1.5,
+                    ease: "power2.out"
+                  }
+                );
+              }
+            }
           });
         }
-      });
+      }, 300);
+    }, 500);
+  }, []);
+
+  // Setup scroll-triggered section detection with enhanced timing
+  useEffect(() => {
+    if (isContentReady && mainRef.current) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const sectionElements = sections.map(section => 
+          document.getElementById(section.id)
+        ).filter(Boolean);
+
+        sectionElements.forEach((element, index) => {
+          if (element) {
+            ScrollTrigger.create({
+              trigger: element,
+              start: "top 60%",
+              end: "bottom 40%",
+              onEnter: () => setCurrentSection(sections[index].id),
+              onEnterBack: () => setCurrentSection(sections[index].id),
+            });
+          }
+        });
+      }, 100);
 
       return () => ScrollTrigger.getAll().forEach(trigger => trigger.kill());
     }
-  }, [isLoading]);
+  }, [isContentReady, sections]);
 
-  // Smooth scroll to section
-  const scrollToSection = (sectionId: string) => {
+  // Smooth scroll to section with enhanced easing
+  const scrollToSection = useCallback((sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       gsap.to(window, {
-        duration: 1.5,
+        duration: 1.8,
         scrollTo: { y: element, offsetY: 80 },
-        ease: "power2.inOut"
+        ease: "power3.inOut"
       });
     }
-  };
+  }, []);
 
-  // Enhanced page transition variants
+  // Enhanced page transition variants with stagger
   const pageVariants = {
-    initial: { opacity: 0, y: 20 },
+    initial: { 
+      opacity: 0, 
+      y: 30,
+      scale: 0.98
+    },
     animate: { 
       opacity: 1, 
       y: 0,
+      scale: 1,
       transition: {
-        duration: 0.8,
-        ease: "easeOut",
-        staggerChildren: 0.1
+        duration: 1.2,
+        ease: [0.4, 0, 0.2, 1],
+        staggerChildren: 0.15,
+        delayChildren: 0.2
       }
     },
     exit: { 
       opacity: 0, 
-      y: -20,
-      transition: { duration: 0.5 }
+      y: -30,
+      scale: 1.02,
+      transition: { 
+        duration: 0.8,
+        ease: [0.4, 0, 1, 1]
+      }
+    }
+  };
+
+  const sectionVariants = {
+    initial: { 
+      opacity: 0, 
+      y: 40,
+      filter: 'blur(2px)'
+    },
+    animate: { 
+      opacity: 1, 
+      y: 0,
+      filter: 'blur(0px)',
+      transition: {
+        duration: 0.8,
+        ease: "power2.out"
+      }
     }
   };
 
@@ -339,39 +405,48 @@ const Index = () => {
       {/* Custom Cursor */}
       <CustomCursor />
       
-      {/* Enhanced Preloader */}
-      <AnimatePresence>
+      {/* Enhanced Preloader with coordinated exit */}
+      <AnimatePresence mode="wait">
         {isLoading && (
-          <AdvancedPreloader onComplete={handlePreloaderComplete}>
-            <div className="page-content">
-              <Navigation />
-              <main ref={mainRef}>
-                {sections.map((section) => (
-                  <section
-                    key={section.id}
-                    id={section.id}
-                    className={`section-padding min-h-screen flex items-center ${section.className}`}
-                  >
-                    {section.component}
-                  </section>
-                ))}
-              </main>
-            </div>
-          </AdvancedPreloader>
+          <motion.div
+            key="preloader"
+            exit={{ 
+              opacity: 0,
+              scale: 1.1,
+              transition: { 
+                duration: 0.8,
+                ease: "power2.inOut" 
+              }
+            }}
+          >
+            <AdvancedPreloader onComplete={handlePreloaderComplete} />
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Content with Enhanced Animations */}
-      <AnimatePresence>
+      {/* Main Content with Enhanced Coordinated Animations */}
+      <AnimatePresence mode="wait">
         {!isLoading && (
           <motion.div
+            key="main-content"
+            ref={pageContentRef}
             className="page-content"
             variants={pageVariants}
             initial="initial"
             animate="animate"
             exit="exit"
           >
-            <Navigation />
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.8, 
+                delay: 0.3,
+                ease: "power2.out" 
+              }}
+            >
+              <Navigation />
+            </motion.div>
             
             <main ref={mainRef}>
               {sections.map((section, index) => (
@@ -381,34 +456,55 @@ const Index = () => {
                   className={`section-padding ${
                     section.id === 'home' ? 'min-h-screen flex items-center' : 'py-32'
                   } ${section.className}`}
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true, margin: "-200px" }}
-                  transition={{ duration: 0.8, delay: index * 0.1 }}
+                  variants={sectionVariants}
+                  initial="initial"
+                  whileInView="animate"
+                  viewport={{ 
+                    once: true, 
+                    margin: "-150px",
+                    amount: 0.2
+                  }}
+                  transition={{ 
+                    delay: index * 0.1,
+                    duration: 0.8 
+                  }}
                 >
                   {section.component}
                 </motion.section>
               ))}
             </main>
 
-            {/* Enhanced Footer */}
+            {/* Enhanced Footer with smoother entrance */}
             <motion.footer
               className="py-16 border-t border-border/20 bg-surface/50"
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ 
+                duration: 1,
+                ease: "power2.out"
+              }}
             >
               <div className="container-luxury">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                  <div>
+                <motion.div 
+                  className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ 
+                    delay: 0.2,
+                    duration: 0.8,
+                    staggerChildren: 0.1
+                  }}
+                >
+                  <motion.div variants={sectionVariants}>
                     <h3 className="font-medium mb-4 tracking-wide">ANAUR DESIGN</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       Creating architectural experiences that transcend the ordinary. 
                       Where innovation meets timeless design.
                     </p>
-                  </div>
-                  <div>
+                  </motion.div>
+                  <motion.div variants={sectionVariants}>
                     <h4 className="font-medium mb-4">Quick Links</h4>
                     <div className="space-y-2">
                       {sections.slice(0, -1).map((section) => (
@@ -421,8 +517,8 @@ const Index = () => {
                         </button>
                       ))}
                     </div>
-                  </div>
-                  <div>
+                  </motion.div>
+                  <motion.div variants={sectionVariants}>
                     <h4 className="font-medium mb-4">Follow Us</h4>
                     <div className="space-y-2">
                       <a href="#" className="block text-muted-foreground text-sm hover:text-accent transition-colors duration-300">
@@ -435,10 +531,16 @@ const Index = () => {
                         Pinterest
                       </a>
                     </div>
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
                 
-                <div className="pt-8 border-t border-border/20">
+                <motion.div 
+                  className="pt-8 border-t border-border/20"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.5, duration: 0.6 }}
+                >
                   <div className="flex flex-col md:flex-row justify-between items-center">
                     <div className="text-caption text-muted-foreground mb-4 md:mb-0">
                       © 2024 ANAUR DESIGN. ALL RIGHTS RESERVED.
@@ -447,19 +549,25 @@ const Index = () => {
                       WEBSITE BY ANAUR STUDIO
                     </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </motion.footer>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Scroll Progress Indicator */}
+      {/* Enhanced Scroll Progress Indicator */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-accent z-50 origin-left"
-        style={{ scaleX: 0 }}
-        animate={{ scaleX: currentSection === 'home' ? 0 : 1 }}
-        transition={{ duration: 0.3 }}
+        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent/80 to-accent z-50 origin-left"
+        initial={{ scaleX: 0 }}
+        animate={{ 
+          scaleX: currentSection === 'home' ? 0 : 1,
+          opacity: currentSection === 'home' ? 0 : 1
+        }}
+        transition={{ 
+          duration: 0.6,
+          ease: "power2.out"
+        }}
       />
     </div>
   );
