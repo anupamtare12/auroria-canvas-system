@@ -26,7 +26,7 @@ const Preloader = () => {
             transition={{ duration: 1.2, ease: "easeOut" }}
             className="text-white text-4xl md:text-6xl font-neue font-bold tracking-widest"
           >
-            Anaur
+            Anaur Design
             <motion.div
               className="h-1 bg-white mt-4"
               initial={{ width: 0 }}

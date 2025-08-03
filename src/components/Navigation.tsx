@@ -13,9 +13,10 @@ const Navigation = () => {
     { name: "Home", path: "/" },
     { name: "About", path: "/about" },
     { name: "Projects", path: "/projects" },
-    { name: "Services", path: "/services" },
-    { name: "Journal", path: "/journal" },
+    { name: "Shop", path: "/shop" },
+    { name: "Blog", path: "/blog" },
     { name: "Contact", path: "/contact" },
+    { name: "Sign In", path: "/signin" },
   ];
 
   useEffect(() => {
