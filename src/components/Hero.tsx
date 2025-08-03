@@ -1,41 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
 const Hero = () => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  
-  useEffect(() => {
-    // Simulate image loading
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!isLoaded) {
-    return (
-      <section className="relative h-screen overflow-hidden bg-black flex items-center justify-center">
-        <motion.div
-          className="flex items-center space-x-3"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-6 h-6 border border-white/20 border-t-white rounded-full"
-          />
-          <span className="text-white/60 text-sm tracking-wider">LOADING EXPERIENCE</span>
-        </motion.div>
-      </section>
-    );
-  }
-
   return (
     <section className="relative h-screen overflow-hidden bg-black">
-      {/* Background Image */}
       <motion.div
         className="absolute inset-0 bg-cover bg-center"
         style={{ 
@@ -46,13 +14,10 @@ const Hero = () => {
         transition={{ duration: 2, ease: "easeOut" }}
       />
       
-      {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 z-10" />
       
-      {/* Content */}
       <div className="relative z-20 flex h-full items-center justify-center px-8 md:px-16">
         <div className="text-center max-w-6xl">
-          {/* Typography */}
           <motion.h1 
             className="text-white leading-none tracking-[-0.02em] mb-12"
             initial={{ opacity: 0, y: 50 }}
@@ -77,7 +42,6 @@ const Hero = () => {
             </motion.span>
           </motion.h1>
           
-          {/* Tagline */}
           <motion.div 
             className="mb-16"
             initial={{ opacity: 0, y: 30 }}
@@ -92,7 +56,6 @@ const Hero = () => {
             </p>
           </motion.div>
 
-          {/* Year indicator */}
           <motion.div 
             className="flex items-center justify-center space-x-8"
             initial={{ opacity: 0, y: 20 }}
@@ -108,7 +71,6 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Scroll indicator */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
