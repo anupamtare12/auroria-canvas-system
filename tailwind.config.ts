@@ -19,8 +19,10 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'neue': ['Neue Montreal', 'system-ui', 'sans-serif'],
-				'suisse': ['Suisse Intl', 'system-ui', 'sans-serif'],
+				'display': ['Playfair Display', 'serif'],
+				'body': ['Inter', 'system-ui', 'sans-serif'],
+				'neue': ['Inter', 'system-ui', 'sans-serif'],
+				'suisse': ['Inter', 'system-ui', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
