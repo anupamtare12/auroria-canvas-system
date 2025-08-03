@@ -1,162 +1,197 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { gsap } from 'gsap';
-
-interface FloatingCircle {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  opacity: number;
-  element: HTMLDivElement;
-}
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 const CustomCursor = () => {
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const followerRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef(null);
+  const trailRefs = useRef([]);
+  const particleContainerRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const [isMoving, setIsMoving] = useState(false);
+  const [isClicking, setIsClicking] = useState(false);
+  const [cursorVariant, setCursorVariant] = useState('default');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const floatingCircles = useRef<FloatingCircle[]>([]);
-  const moveTimeout = useRef<NodeJS.Timeout>();
+  const [velocity, setVelocity] = useState({ x: 0, y: 0 });
+  
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 500, damping: 50 });
+  const springY = useSpring(mouseY, { stiffness: 500, damping: 50 });
 
-  const createFloatingCircle = useCallback(() => {
-    if (!containerRef.current) return null;
+  // Particle system
+  const particles = useRef([]);
+  const lastMousePos = useRef({ x: 0, y: 0 });
 
-    const circle = document.createElement('div');
-    const size = Math.random() * 20 + 10;
-    const x = Math.random() * window.innerWidth;
-    const y = Math.random() * window.innerHeight;
+  const createParticle = useCallback((x, y, type = 'trail') => {
+    if (!particleContainerRef.current) return;
+
+    const particle = document.createElement('div');
+    const size = type === 'explosion' ? Math.random() * 8 + 4 : Math.random() * 4 + 2;
+    const colors = ['#ffffff', '#f0f0f0', '#e0e0e0', '#d0d0d0'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
     
-    circle.className = 'absolute rounded-full border border-white/20 pointer-events-none';
-    circle.style.width = `${size}px`;
-    circle.style.height = `${size}px`;
-    circle.style.left = `${x}px`;
-    circle.style.top = `${y}px`;
-    circle.style.transform = 'translate(-50%, -50%)';
-    circle.style.opacity = '0.3';
+    particle.className = `absolute rounded-full pointer-events-none`;
+    particle.style.width = `${size}px`;
+    particle.style.height = `${size}px`;
+    particle.style.left = `${x}px`;
+    particle.style.top = `${y}px`;
+    particle.style.backgroundColor = color;
+    particle.style.transform = 'translate(-50%, -50%)';
+    particle.style.mixBlendMode = 'difference';
+    particle.style.zIndex = '9999';
     
-    containerRef.current.appendChild(circle);
-    
-    return {
-      id: Date.now() + Math.random(),
-      x,
-      y,
-      size,
-      opacity: 0.3,
-      element: circle
-    };
+    particleContainerRef.current.appendChild(particle);
+
+    // Animate particle
+    if (type === 'explosion') {
+      const angle = Math.random() * Math.PI * 2;
+      const force = Math.random() * 100 + 50;
+      const endX = x + Math.cos(angle) * force;
+      const endY = y + Math.sin(angle) * force;
+      
+      particle.animate([
+        { 
+          transform: 'translate(-50%, -50%) scale(1)',
+          opacity: 1
+        },
+        { 
+          transform: `translate(${endX - x}px, ${endY - y}px) translate(-50%, -50%) scale(0)`,
+          opacity: 0
+        }
+      ], {
+        duration: 800 + Math.random() * 400,
+        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+      }).onfinish = () => particle.remove();
+    } else {
+      // Trail particle
+      particle.animate([
+        { 
+          transform: 'translate(-50%, -50%) scale(1)',
+          opacity: 0.8
+        },
+        { 
+          transform: 'translate(-50%, -50%) scale(0)',
+          opacity: 0
+        }
+      ], {
+        duration: 600,
+        easing: 'ease-out'
+      }).onfinish = () => particle.remove();
+    }
   }, []);
 
-  const animateFloatingCircles = useCallback(() => {
-    floatingCircles.current.forEach((circle) => {
-      if (!isMoving) {
-        // Random movement when mouse is stationary
-        const newX = circle.x + (Math.random() - 0.5) * 100;
-        const newY = circle.y + (Math.random() - 0.5) * 100;
-        
-        // Keep within bounds
-        const boundedX = Math.max(50, Math.min(window.innerWidth - 50, newX));
-        const boundedY = Math.max(50, Math.min(window.innerHeight - 50, newY));
-        
-        gsap.to(circle.element, {
-          left: boundedX,
-          top: boundedY,
-          duration: 2 + Math.random() * 3,
-          ease: "power2.inOut"
-        });
-        
-        circle.x = boundedX;
-        circle.y = boundedY;
-      } else {
-        // Magnetic attraction to mouse
-        const distance = Math.sqrt(
-          Math.pow(mousePos.x - circle.x, 2) + Math.pow(mousePos.y - circle.y, 2)
-        );
-        
-        if (distance < 200) {
-          const force = (200 - distance) / 200;
-          const attractionX = mousePos.x + (circle.x - mousePos.x) * (1 - force * 0.3);
-          const attractionY = mousePos.y + (circle.y - mousePos.y) * (1 - force * 0.3);
-          
-          gsap.to(circle.element, {
-            left: attractionX,
-            top: attractionY,
-            duration: 0.5,
-            ease: "power2.out"
-          });
-          
-          circle.x = attractionX;
-          circle.y = attractionY;
-        }
-      }
-    });
-  }, [isMoving, mousePos]);
-
-  useEffect(() => {
-    // Create initial floating circles
-    for (let i = 0; i < 8; i++) {
-      const circle = createFloatingCircle();
-      if (circle) {
-        floatingCircles.current.push(circle);
-      }
+  const createExplosion = useCallback((x, y) => {
+    for (let i = 0; i < 12; i++) {
+      setTimeout(() => createParticle(x, y, 'explosion'), i * 20);
     }
+  }, [createParticle]);
 
-    // Animation loop
-    const interval = setInterval(animateFloatingCircles, 100);
+  const createTrail = useCallback((x, y) => {
+    const distance = Math.sqrt(
+      Math.pow(x - lastMousePos.current.x, 2) + 
+      Math.pow(y - lastMousePos.current.y, 2)
+    );
+    
+    if (distance > 10) {
+      createParticle(x, y, 'trail');
+      lastMousePos.current = { x, y };
+    }
+  }, [createParticle]);
 
-    return () => {
-      clearInterval(interval);
-      floatingCircles.current.forEach(circle => {
-        circle.element.remove();
-      });
-    };
-  }, [createFloatingCircle, animateFloatingCircles]);
+  // Cursor variants
+  const cursorVariants = {
+    default: {
+      width: 16,
+      height: 16,
+      backgroundColor: 'white',
+      mixBlendMode: 'difference',
+      border: 'none'
+    },
+    hover: {
+      width: 60,
+      height: 60,
+      backgroundColor: 'transparent',
+      border: '2px solid white',
+      mixBlendMode: 'difference'
+    },
+    click: {
+      width: 80,
+      height: 80,
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      border: '3px solid white',
+      mixBlendMode: 'difference'
+    },
+    text: {
+      width: 100,
+      height: 100,
+      backgroundColor: 'transparent',
+      border: '1px solid white',
+      mixBlendMode: 'difference'
+    }
+  };
 
   useEffect(() => {
-    const cursor = cursorRef.current;
-    const follower = followerRef.current;
-
-    if (!cursor || !follower) return;
-
-    const moveCursor = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-      setIsMoving(true);
-
-      gsap.to(cursor, {
-        x: e.clientX,
-        y: e.clientY,
-        duration: 0,
+    const moveCursor = (e) => {
+      const newX = e.clientX;
+      const newY = e.clientY;
+      
+      // Calculate velocity
+      setVelocity({
+        x: newX - mousePos.x,
+        y: newY - mousePos.y
       });
+      
+      setMousePos({ x: newX, y: newY });
+      mouseX.set(newX);
+      mouseY.set(newY);
 
-      gsap.to(follower, {
-        x: e.clientX,
-        y: e.clientY,
-        duration: 0.5,
-        ease: "power2.out",
-      });
+      // Create trail particles based on movement speed
+      const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+      if (speed > 2 && Math.random() < 0.3) {
+        createTrail(newX, newY);
+      }
+    };
 
-      // Reset moving state after a delay
-      clearTimeout(moveTimeout.current);
-      moveTimeout.current = setTimeout(() => {
-        setIsMoving(false);
-      }, 300);
+    const handleMouseDown = (e) => {
+      setIsClicking(true);
+      setCursorVariant('click');
+      createExplosion(e.clientX, e.clientY);
+    };
+
+    const handleMouseUp = () => {
+      setIsClicking(false);
+      setCursorVariant(isHovering ? 'hover' : 'default');
     };
 
     const handleMouseEnter = () => setIsVisible(true);
     const handleMouseLeave = () => setIsVisible(false);
 
-    const handleHoverStart = () => setIsHovering(true);
-    const handleHoverEnd = () => setIsHovering(false);
+    const handleHoverStart = (e) => {
+      setIsHovering(true);
+      const element = e.target;
+      
+      if (element.tagName === 'A' || element.tagName === 'BUTTON') {
+        setCursorVariant('hover');
+      } else if (element.tagName === 'H1' || element.tagName === 'H2' || element.tagName === 'P') {
+        setCursorVariant('text');
+      } else {
+        setCursorVariant('hover');
+      }
+    };
 
-    // Add event listeners
+    const handleHoverEnd = () => {
+      setIsHovering(false);
+      setCursorVariant('default');
+    };
+
+    // Event listeners
     document.addEventListener('mousemove', moveCursor);
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mouseenter', handleMouseEnter);
     document.addEventListener('mouseleave', handleMouseLeave);
 
-    // Add hover listeners to interactive elements
-    const interactiveElements = document.querySelectorAll('a, button, [data-cursor-hover]');
+    // Interactive elements
+    const interactiveElements = document.querySelectorAll('a, button, h1, h2, h3, p, [data-cursor-hover]');
     interactiveElements.forEach(el => {
       el.addEventListener('mouseenter', handleHoverStart);
       el.addEventListener('mouseleave', handleHoverEnd);
@@ -164,6 +199,8 @@ const CustomCursor = () => {
 
     return () => {
       document.removeEventListener('mousemove', moveCursor);
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mouseenter', handleMouseEnter);
       document.removeEventListener('mouseleave', handleMouseLeave);
       
@@ -171,31 +208,158 @@ const CustomCursor = () => {
         el.removeEventListener('mouseenter', handleHoverStart);
         el.removeEventListener('mouseleave', handleHoverEnd);
       });
-      
-      clearTimeout(moveTimeout.current);
     };
-  }, []);
+  }, [mousePos, velocity, isHovering, createTrail, createExplosion]);
+
+  // Floating orbs that follow cursor
+  const FloatingOrb = ({ delay, distance }) => (
+    <motion.div
+      className="absolute w-4 h-4 rounded-full bg-white/20 mix-blend-difference pointer-events-none"
+      style={{
+        x: springX,
+        y: springY,
+      }}
+      animate={{
+        x: [0, distance, -distance, 0],
+        y: [0, -distance, distance, 0],
+        scale: [0.5, 1, 0.5],
+        opacity: [0.3, 0.7, 0.3]
+      }}
+      transition={{
+        duration: 4,
+        delay: delay,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    />
+  );
+
+  // Ripple effect component
+  const RippleEffect = () => (
+    <motion.div
+      className="absolute rounded-full border border-white/30 pointer-events-none"
+      style={{
+        x: springX,
+        y: springY,
+        transform: 'translate(-50%, -50%)'
+      }}
+      animate={{
+        width: [0, 200],
+        height: [0, 200],
+        opacity: [0.8, 0]
+      }}
+      transition={{
+        duration: 2,
+        repeat: Infinity,
+        ease: "easeOut"
+      }}
+    />
+  );
+
+  if (typeof window === 'undefined') return null;
 
   return (
-    <div ref={containerRef} className="pointer-events-none fixed inset-0 z-50 hidden lg:block">
-      {/* Main cursor dot */}
-      <div
-        ref={cursorRef}
-        className={`absolute w-3 h-3 bg-white mix-blend-difference rounded-full transition-opacity duration-300 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
-        style={{ transform: 'translate(-50%, -50%)' }}
-      />
+    <div className="pointer-events-none fixed inset-0 z-[9999] hidden lg:block">
+      {/* Particle container */}
+      <div ref={particleContainerRef} className="absolute inset-0" />
       
-      {/* Follower circle */}
-      <div
-        ref={followerRef}
-        className={`absolute border border-white/40 mix-blend-difference rounded-full transition-all duration-300 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        } ${
-          isHovering ? 'w-20 h-20 bg-white/5' : 'w-10 h-10'
-        }`}
-        style={{ transform: 'translate(-50%, -50%)' }}
+      {/* Floating orbs */}
+      {[...Array(6)].map((_, i) => (
+        <FloatingOrb 
+          key={i} 
+          delay={i * 0.3} 
+          distance={20 + i * 5} 
+        />
+      ))}
+      
+      {/* Ripple effects */}
+      <RippleEffect />
+      
+      {/* Main cursor */}
+      <motion.div
+        ref={cursorRef}
+        className="absolute rounded-full pointer-events-none z-[10000]"
+        style={{
+          x: springX,
+          y: springY,
+          transform: 'translate(-50%, -50%)'
+        }}
+        animate={cursorVariants[cursorVariant]}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 25
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ 
+          opacity: isVisible ? 1 : 0,
+          rotate: isClicking ? 180 : 0
+        }}
+      >
+        {/* Inner dot */}
+        <motion.div
+          className="absolute top-1/2 left-1/2 w-2 h-2 bg-white rounded-full mix-blend-difference"
+          style={{ transform: 'translate(-50%, -50%)' }}
+          animate={{
+            scale: cursorVariant === 'default' ? 1 : 0
+          }}
+        />
+        
+        {/* Hover text for interactive elements */}
+        {cursorVariant === 'hover' && (
+          <motion.div
+            className="absolute top-full left-1/2 mt-2 px-2 py-1 bg-white/10 backdrop-blur-sm rounded text-xs text-white whitespace-nowrap"
+            style={{ transform: 'translateX(-50%)' }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            Click me
+          </motion.div>
+        )}
+      </motion.div>
+      
+      {/* Trail elements */}
+      {[...Array(8)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-3 h-3 rounded-full bg-white/20 mix-blend-difference pointer-events-none"
+          style={{
+            x: springX,
+            y: springY,
+            transform: 'translate(-50%, -50%)'
+          }}
+          animate={{
+            scale: [0, 1, 0],
+            opacity: [0, 0.6, 0]
+          }}
+          transition={{
+            duration: 1,
+            delay: i * 0.1,
+            repeat: Infinity,
+            ease: "easeOut"
+          }}
+        />
+      ))}
+      
+      {/* Magnetic field visualization */}
+      <motion.div
+        className="absolute rounded-full border border-white/10 pointer-events-none"
+        style={{
+          x: springX,
+          y: springY,
+          transform: 'translate(-50%, -50%)'
+        }}
+        animate={{
+          width: [100, 150, 100],
+          height: [100, 150, 100],
+          opacity: [0.1, 0.3, 0.1]
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
       />
     </div>
   );
