@@ -48,6 +48,10 @@ const CustomCursor = () => {
     const handleHoverStart = () => setIsHovering(true);
     const handleHoverEnd = () => setIsHovering(false);
 
+    // Initialize cursor as visible immediately
+    setIsVisible(true);
+    document.body.style.cursor = 'none';
+
     // Add event listeners
     document.addEventListener('mousemove', moveCursor);
     document.addEventListener('mouseenter', handleMouseEnter);
@@ -88,14 +92,14 @@ const CustomCursor = () => {
           left: 0,
           width: '12px',
           height: '12px',
-          backgroundColor: 'white',
+          backgroundColor: '#ff6b6b',
           borderRadius: '50%',
           pointerEvents: 'none',
           zIndex: 99999,
-          mixBlendMode: 'difference',
           opacity: isVisible ? 1 : 0,
           transition: 'opacity 0.2s ease',
-          willChange: 'transform'
+          willChange: 'transform',
+          boxShadow: '0 0 10px rgba(255, 107, 107, 0.5)'
         }}
       />
       
@@ -107,14 +111,14 @@ const CustomCursor = () => {
           left: 0,
           width: isHovering ? '40px' : '30px',
           height: isHovering ? '40px' : '30px',
-          border: '2px solid white',
+          border: '2px solid #ff6b6b',
           borderRadius: '50%',
           pointerEvents: 'none',
           zIndex: 99998,
-          mixBlendMode: 'difference',
           opacity: isVisible ? 0.6 : 0,
           transition: 'width 0.2s ease, height 0.2s ease, opacity 0.2s ease',
-          willChange: 'transform'
+          willChange: 'transform',
+          backgroundColor: 'rgba(255, 107, 107, 0.1)'
         }}
       />
 
