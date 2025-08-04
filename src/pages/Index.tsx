@@ -2,11 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Import components
-import CustomCursor from '../components/ui/CustomCursor';
-import AdvancedPreloader from '../components/ui/Preloader';
-import Navigation from '../components/ui/Navigation';
-import Hero from '../components/ui/Hero';
-import About from '../components/ui/About';
+import CustomCursor from '../components/CustomCursor';
+import AdvancedPreloader from '../components/Preloader';
+import Navigation from '../components/Navigation';
+import Hero from '../components/Hero';
+import About from '../components/About';
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);

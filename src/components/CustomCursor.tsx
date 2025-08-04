@@ -140,7 +140,7 @@ const CustomCursor = () => {
       )}
 
       {/* CSS for animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeOut {
           0% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
           100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
