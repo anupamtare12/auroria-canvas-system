@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 const CustomCursor = () => {
   const cursorRef = useRef(null);
   const followerRef = useRef(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -86,35 +86,39 @@ const CustomCursor = () => {
       {/* Make sure cursor is visible by using inline styles */}
       <div
         ref={cursorRef}
-        className="fixed w-3 h-3 rounded-full pointer-events-none"
         style={{
+          position: 'fixed',
           top: 0,
           left: 0,
-          backgroundColor: '#ff6b6b',
-          zIndex: 9999,
+          width: '12px',
+          height: '12px',
+          backgroundColor: 'white',
+          borderRadius: '50%',
+          pointerEvents: 'none',
+          zIndex: 99999,
+          mixBlendMode: 'difference',
           opacity: isVisible ? 1 : 0,
           transition: 'opacity 0.2s ease',
-          willChange: 'transform',
-          boxShadow: '0 0 10px rgba(255, 107, 107, 0.5)',
-          transform: 'translate(-50%, -50%)'
+          willChange: 'transform'
         }}
       />
       
       <div
         ref={followerRef}
-        className="fixed rounded-full pointer-events-none border-2"
         style={{
+          position: 'fixed',
           top: 0,
           left: 0,
           width: isHovering ? '40px' : '30px',
           height: isHovering ? '40px' : '30px',
-          borderColor: '#ff6b6b',
-          zIndex: 9998,
+          border: '2px solid white',
+          borderRadius: '50%',
+          pointerEvents: 'none',
+          zIndex: 99998,
+          mixBlendMode: 'difference',
           opacity: isVisible ? 0.6 : 0,
           transition: 'width 0.2s ease, height 0.2s ease, opacity 0.2s ease',
-          willChange: 'transform',
-          backgroundColor: 'rgba(255, 107, 107, 0.1)',
-          transform: 'translate(-50%, -50%)'
+          willChange: 'transform'
         }}
       />
 
