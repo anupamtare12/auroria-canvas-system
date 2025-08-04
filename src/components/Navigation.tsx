@@ -18,15 +18,23 @@ const Navigation = () => {
           ANAUR
         </motion.div>
         <div className="hidden md:flex space-x-8">
-          {['Home', 'About', 'Projects', 'Contact'].map((item) => (
+          {[
+            { name: 'Home', href: '/' },
+            { name: 'About', href: '/about' },
+            { name: 'Projects', href: '/projects' },
+            { name: 'Shop', href: '/shop' },
+            { name: 'Blog', href: '/blog' },
+            { name: 'Contact', href: '/contact' },
+            { name: 'Sign In', href: '/signin' }
+          ].map((item) => (
             <motion.a
-              key={item}
-              href={`#${item.toLowerCase()}`}
+              key={item.name}
+              href={item.href}
               className="text-white/80 hover:text-white text-sm tracking-wide transition-colors duration-300"
               whileHover={{ y: -2 }}
               transition={{ duration: 0.2 }}
             >
-              {item}
+              {item.name}
             </motion.a>
           ))}
         </div>
